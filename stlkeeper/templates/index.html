@@ -1,0 +1,172 @@
+<html>
+
+<head>
+  <title>Stl Keeper</title>  
+  <script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
+  <script src="https://rawgithub.com/mrdoob/three.js/master/build/three.js"></script>
+</head>
+
+<script  type="text/javascript">
+
+function animate() {
+
+	requestAnimationFrame( animate );
+
+	render();
+	//stats.update();
+
+}
+
+function render() {
+
+	var time = Date.now();
+	
+	var timer = time * 0.0005;
+
+	camera.position.x = Math.cos( timer ) * 200;
+	camera.position.z = Math.sin( timer ) * 200;
+
+	cameraTarget = new THREE.Vector3( 0, -0, 0 );
+	camera.lookAt( cameraTarget );
+
+	renderer.render( scene, camera );
+	
+	// document.getElementById('fps').innerHTML = 1000 / (Date.now() - time + 1);
+
+}
+
+function createShadowedLight( x, y, z, color, intensity ) {
+
+	var light = new THREE.DirectionalLight( color, intensity );
+	light.position.x = x;
+	light.position.y = y;
+	light.position.z = z;
+	//set( x, y, z )
+
+	light.castShadow = true;
+	// light.shadowCameraVisible = true;
+
+	/*var d = 1;
+	directionalLight.shadowCameraLeft = -d;
+	directionalLight.shadowCameraRight = d;
+	directionalLight.shadowCameraTop = d;
+	directionalLight.shadowCameraBottom = -d;
+
+	directionalLight.shadowCameraNear = 1;
+	directionalLight.shadowCameraFar = 4; */
+
+	light.shadowMapWidth = 1024;
+	light.shadowMapHeight = 1024;
+
+	light.shadowBias = -0.005;
+	light.shadowDarkness = 0.15;
+	
+	return light; 
+}
+
+function showModel(data)
+{
+	var geometry = new THREE.Geometry();
+
+	for(i = 0; i<data.length; ++i)
+	{
+		for(j = 0; j<3; ++j)
+			geometry.vertices.push( new THREE.Vector3( data[i].v[j][0], data[i].v[j][1], data[i].v[j][2] ) );
+		
+		geometry.faces.push( new THREE.Face3( i*3, i*3+1, i*3+2 ) );	
+	}
+
+	geometry.computeBoundingSphere();
+
+	var material = new THREE.MeshLambertMaterial( { color: 0x00ff00, emissive: 0x000000, ambient: 0x00ff00 } );
+	// var material = new THREE.MeshPhongMaterial( { ambient: 0x555555, color: 0xAAAAAA, specular: 0x111111, shininess: 200 } );
+	var model = new THREE.Mesh( geometry, material );
+	model.receiveShadow = true;
+	model.castShadow = true;
+	scene.add( model );	
+	
+	camera.position.x = 200;
+	camera.position.y = 200;
+	camera.position.z = 0;
+
+	scene.add( new THREE.AmbientLight( 0x777777 ) );
+	var c = 200;
+	for(i = 0; i<2; ++i)
+		for(j = 0; j<2; ++j)
+			for(k = 0; k<2; ++k)
+				scene.add( createShadowedLight( c - 2*i*c, c - 2*j*c, c - 2*k*c, 0xffffff, 300 ) );
+
+
+	if(!animation_started) 
+	{
+		animate();
+		animation_started = true;
+	}
+}
+
+$(document).on("ready", function() {
+
+	scene = new THREE.Scene(); 
+	camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+
+	renderer = new THREE.WebGLRenderer(); 
+	renderer.gammaInput = true;
+	renderer.gammaOutput = true;
+
+	renderer.shadowMapEnabled = true;
+	renderer.shadowMapCullFace = THREE.CullFaceBack;
+	renderer.setSize( window.innerWidth, window.innerHeight );
+
+	$("#Canvas").append( renderer.domElement );
+
+
+	//var sky_light = new THREE.HemisphereLight( 0xaaaaff, 0x222222, 1.0)
+	//scene.add( sky_light );
+
+	animation_started = false;
+	
+	
+	$("#FileList").on("click", function(e) {
+		var file_name = $(e.target).text();
+		
+		$.ajax({
+			url: "stl",
+			data: {'file' : file_name },
+			dataType: 'json',
+			type: "get",
+			success: function(data) {
+				showModel(data);
+			},
+			error: function() {
+				alert("Something wrong...");
+			}
+		});
+		
+		return false;
+	})
+	
+});
+
+</script>
+
+<body>
+
+<table width="100%" height="100%">
+
+<tr>
+<td width="200">
+Files:
+<ul id="FileList">
+{% for f in files %}
+    <li><a href="stl?file={{ f }}" class="file-link">{{ f }}</a></li>
+{% endfor %} 
+</ul>
+</td>
+<td width="*" id="Canvas"></td>
+<td width="200">Right</td>
+</tr>
+</table>
+
+</body>
+
+</html>
