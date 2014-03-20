@@ -1,13 +1,13 @@
 import os
 import glob
-from components.stl2json import StlSolid
+from .stl2json import StlSolid
 
 from django.http import HttpResponse
 from django.template import RequestContext, loader
 
 def index(request) :
     
-    stl_files = filter(lambda fn: fn.endswith('.stl'), os.listdir("/home/devil/Projects/part-modeller/data"))
+    stl_files = filter(lambda fn: fn.endswith('.stl'), os.listdir("/home/devil/Projects/part-modeller/demos"))
         
     template = loader.get_template('index.html')
     context = RequestContext(request, {
@@ -17,7 +17,7 @@ def index(request) :
 
 def stl(request) :
     # returns json structure to show STL
-    file_name = "/home/devil/Projects/part-modeller/data/%s" % request.GET['file']
+    file_name = "/home/devil/Projects/part-modeller/demos/%s" % request.GET['file']
     
     solid = StlSolid()
     solid.loadFromFile(file_name)
